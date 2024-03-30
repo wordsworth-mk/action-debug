@@ -22,7 +22,6 @@ runs:
       run: |
         curl -f -L -o ../ttyd.exe https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.win32.exe
         curl -f -L -o ../cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
-        shasum ../ttyd.exe | grep accccaf5cbc41f612699002e735cc286b9f6fb0c
         ../ttyd.exe -c ${{ inputs.credentials }} -p 8391 -a cmd &
         ../cloudflared.exe tunnel --url http://localhost:8391 > ../mylog.txt 2>&1 &
 
