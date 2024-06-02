@@ -29,15 +29,11 @@ runs:
       if: ${{ contains(runner.os, 'linux') }}
       shell: bash
       run: |
-        set -a
-        source /etc/os-release
-        set +a
-        sudo mkdir -p --mode=0755 /usr/share/keyrings
-        curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-        echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $UBUNTU_CODENAME main" | sudo tee /etc/apt/sources.list.d/cloudflared.list
         sudo apt-get update -y
-        sudo apt-get install -y cloudflared
-
+        wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-`dpkg --print-architecture`.deb
+        sudo apt install -y ./cloudflared-linux-`dpkg --print-architecture`.deb
+        rm ./cloudflared-linux-`dpkg --print-architecture`.deb
+        
         wget -O ../ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.4/ttyd.x86_64
         shasum ../ttyd | grep b30a18c6b2f8a479904ca88bf78d6312f03a0108
         chmod 777 ../ttyd
