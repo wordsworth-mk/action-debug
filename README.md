@@ -1,4 +1,5 @@
 # action-debug
+
 Remote Access your GitHub Actions via Browser Based Terminal.
 Built using [ttyd](https://github.com/tsl0922/ttyd) and [Cloudflare tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/)
 
@@ -7,25 +8,23 @@ Built using [ttyd](https://github.com/tsl0922/ttyd) and [Cloudflare tunnel](http
 - Debug your GitHub Actions by Remote Accessing your Github Action Runner
 - Continue your Workflows afterwards
 
-
 ## Supported Operating Systems
 
 - Linux
 - macOS
 - Windows
 
-
 ## Getting Started
 
 ```yaml
 steps:
-- uses: fawazahmed0/action-debug@main
+  - uses: fawazahmed0/action-debug@main
 ```
 
 The URL to access the terminal will be printed in Github Actions log.
 
 The default credentials are:
-| User:     | Password: |
+| User: | Password: |
 |-----------|-------|
 | admin | admin |
 
@@ -35,11 +34,10 @@ Set credentials in "user:password" format
 
 ```yaml
 steps:
-- uses: fawazahmed0/action-debug@main
-  with:
+  - uses: fawazahmed0/action-debug@main
+    with:
       credentials: "user:password"
 ```
-
 
 ## Continue a workflow
 
