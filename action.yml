@@ -1,57 +1,81 @@
-name: 'Debugging with browser'
-description: 'Debug your GitHub Actions by Accessing Terminal via Web Browser'
+name: "Debugging with browser"
+description: "Debug your GitHub Actions by Accessing Terminal via Web Browser"
 branding:
   icon: terminal
-  color: 'black'
-author: 'Fawaz Ahmed'
+  color: "black"
+author: "Fawaz Ahmed"
 
 # Define your inputs here.
 inputs:
   credentials:
-    description: 'Set credentials in username:password format to access the terminal. Default value is admin:admin'
+    description: "Set credentials in username:password format to access the terminal. Default value is admin:admin"
     required: false
-    default: 'admin:admin'
+    default: "admin:admin"
+  loop_wait:
+    description: "Set to true to wait for continue file to exist"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
   steps:
-
     - name: Install dependencies and run commands in windows
       if: ${{ contains(runner.os, 'windows') }}
       shell: bash
       run: |
-        curl -f -L -o ../ttyd.exe https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.win32.exe
-        curl -f -L -o ../cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
-        ../ttyd.exe -c ${{ inputs.credentials }} -p 8391 -a cmd &
-        ../cloudflared.exe tunnel --url http://localhost:8391 > ../mylog.txt 2>&1 &
+        curl -s -f -L -o ../ttyd.exe https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.win32.exe
+        curl -s -f -L -o ../cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+        ../ttyd.exe -c ${{ inputs.credentials }} -p 8392 -a cmd > /dev/null &
+        ../cloudflared.exe tunnel --url http://localhost:8392 > ../ssh-by-ttyd.log 2>&1 > /dev/null &
 
     - name: Install dependencies and run commands in linux
       if: ${{ contains(runner.os, 'linux') }}
       shell: bash
       run: |
-        sudo apt-get update -y
-        wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-`dpkg --print-architecture`.deb
-        sudo apt install -y ./cloudflared-linux-`dpkg --print-architecture`.deb
+        sudo apt-get update -y > /dev/null
+        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-`dpkg --print-architecture`.deb
+        sudo apt install -y ./cloudflared-linux-`dpkg --print-architecture`.deb > /dev/null
         rm ./cloudflared-linux-`dpkg --print-architecture`.deb
-        
-        wget -O ../ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.4/ttyd.x86_64
+
+        wget -q -O ../ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.4/ttyd.x86_64
         shasum ../ttyd | grep b30a18c6b2f8a479904ca88bf78d6312f03a0108
         chmod 777 ../ttyd
-        ../ttyd -c ${{ inputs.credentials }} -p 8391 -a -W bash &
-        cloudflared tunnel --url http://localhost:8391 > ../mylog.txt 2>&1 &
+        ../ttyd -c ${{ inputs.credentials }} -p 8392 -a -W bash > /dev/null &
+        cloudflared tunnel --url http://localhost:8392 > ../ssh-by-ttyd.log 2>&1 > /dev/null &
 
     - name: Install dependencies and run commands in macOS
       if: ${{ contains(runner.os, 'macos') }}
       shell: bash
       run: |
         brew install ttyd
-        wget -O ../file.tgz https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz
+        wget -q -O ../file.tgz https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz
         tar -xvzf ../file.tgz -C ../
         chmod 777 ../cloudflared
-        ttyd -c ${{ inputs.credentials }} -p 8391 -a -W bash &
-        ../cloudflared tunnel --url http://localhost:8391 > ../mylog.txt 2>&1 &
+        ttyd -c ${{ inputs.credentials }} -p 8392 -a -W bash > /dev/null &
+        ../cloudflared tunnel --url http://localhost:8392 > ../ssh-by-ttyd.log 2>&1 > /dev/null &
+
+    - name: 输出连接信息
+      shell: bash
+      run: |
+        LOG_FILE=../ssh-by-ttyd.log
+        # 定义关键句
+        KEY_PHRASE="Your quick Tunnel has been created!"
+
+        # 循环检查日志文件，直到找到关键句
+        while true; do
+            # 使用 grep 搜索关键句并输出上下文行
+            if grep -rn -C 2 -- "$KEY_PHRASE" "$LOG_FILE"; then
+                break
+            else
+                # 等待一段时间后再次检查（每5秒检查一次）
+                sleep 5
+            fi
+        done
 
     - name: wait for continue file to exist
       shell: bash
       run: |
-        while [ ! -f ./continue ]; do sleep 5; cat ../mylog.txt; done
+        if [ ${{ inputs.loop_wait }} == "true" ]; then
+          echo "touch $GITHUBWORKSPACE/continue to continue workflow"
+          while [ ! -f ./continue ]; do sleep 5; done
+        fi
